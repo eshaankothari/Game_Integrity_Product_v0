@@ -22,11 +22,14 @@ PLAYERS = {
     "Terry Rozier": "#9467bd",    # purple
 }
 
+import sys
 _HERE = Path(__file__).parent
-CSV = next((p for p in [_HERE / "Key Figures" / "closing_under_prices.csv",
-                        _HERE / "closing_under_prices.csv"] if p.exists()), None)
-if CSV is None:
-    raise SystemExit("closing_under_prices.csv not found in Key Figures/ or project root")
+_root = _HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("closing_under_prices.csv")
 
 OUT = _HERE / "player_graphs"
 OUT.mkdir(exist_ok=True)

@@ -17,8 +17,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import sys
 HERE = Path(__file__).parent
-CSV = HERE / "Key Figures" / "test_dataset_jan_mar_scored.csv"
+_root = HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("test_dataset_jan_mar_scored.csv")
 GROUP_COLOR = {"flagged": "#d62728", "control": "#1f77b4"}
 
 df = pd.read_csv(CSV)

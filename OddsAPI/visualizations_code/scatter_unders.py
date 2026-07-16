@@ -13,13 +13,16 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# The CSV lives in the Key Figures/ folder; fall back to the project root.
+# Locate the CSV wherever it has been moved in the repo.
+import sys
 from pathlib import Path
 _HERE = Path(__file__).parent
-CSV = next((p for p in [_HERE / "Key Figures" / "closing_under_prices.csv",
-                        _HERE / "closing_under_prices.csv"] if p.exists()), None)
-if CSV is None:
-    raise SystemExit("closing_under_prices.csv not found in Key Figures/ or project root")
+_root = _HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("closing_under_prices.csv")
 
 # Players to highlight, each with its own color. Everyone else -> "Other".
 HIGHLIGHT = {

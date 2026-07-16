@@ -25,9 +25,10 @@ from nba_api.stats.endpoints import scoreboardv2, boxscoretraditionalv3
 
 HERE = Path(__file__).parent
 ROOT = HERE.parent                        # project root (holds OddsAPI/ and nba_api/)
-KF = ROOT / "OddsAPI" / "Key Figures"     # data lives under OddsAPI, not next to this script
-SRC = KF / "test_dataset_jan_mar.csv"
-OUT = KF / "test_dataset_jan_mar_boxscores.csv"
+sys.path.insert(0, str(ROOT))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+SRC = find_data("test_dataset_jan_mar.csv")          # found wherever it lives
+OUT = HERE / "test_dataset_jan_mar_boxscores.csv"    # write next to this script
 CACHE = ROOT / "nba_cache"
 CACHE.mkdir(exist_ok=True)
 TIMEOUT = 30

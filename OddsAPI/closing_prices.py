@@ -28,7 +28,13 @@ API_KEY = os.environ.get("ODDSAPI_KEY")
 ODDS_URL = ("https://api.the-odds-api.com/v4/historical/sports/"
             "basketball_nba/events/{event_id}/odds")
 
-EVENTS_FILE = Path(__file__).parent / "events_2023-2024_full_season.json"
+import sys
+_root = Path(__file__).resolve().parent
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+EVENTS_FILE = find_data("events_2023-2024_full_season.json")
 OUT_CSV = Path(__file__).parent / "closing_under_prices.csv"
 CACHE_DIR = Path(__file__).parent / "closing_cache"   # raw responses, per event
 

@@ -15,11 +15,17 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import sys
 HERE = Path(__file__).parent
-CSV = HERE / "Key Figures" / "test_dataset_jan_mar_robust.csv"
+_root = HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("test_dataset_jan_mar_robust.csv")
 
 df = pd.read_csv(CSV).sort_values("suspicious_score", ascending=False).reset_index(drop=True)
-df["date"] = pd.to_datetime(df["time"]).dt.strftime("%b %d")
+df["date"] = pd.to_datetime(df["time"], format="ISO8601").dt.strftime("%b %d")
 df["label"] = df["player"] + " — " + df["date"] + " (" + df["group"] + ")"
 
 COLS = ["p_line", "p_price", "p_ratio", "suspicious_score"]

@@ -19,9 +19,15 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import sys
 HERE = Path(__file__).parent
 KF = HERE.parent / "Key Figures"
-CSV = KF / "test_dataset_jan_mar_boxscores.csv"
+_root = HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("test_dataset_jan_mar_boxscores.csv")
 OUT = KF / "test_dataset_jan_mar_outcome_scored.csv"
 
 

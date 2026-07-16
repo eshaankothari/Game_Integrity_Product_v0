@@ -15,8 +15,14 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+import sys
 HERE = Path(__file__).parent
-CSV = HERE / "Key Figures" / "test_dataset_jan_mar.csv"
+_root = HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("test_dataset_jan_mar.csv")
 
 COLORS = {
     "Jontay Porter": "#d62728", "Malik Beasley": "#2ca02c", "Terry Rozier": "#9467bd",
@@ -27,7 +33,7 @@ GROUP_MARKER = {"flagged": "o", "control": "D"}
 df = pd.read_csv(CSV)
 df = df.dropna(subset=["start_line", "close_line", "close_under"])
 df["line_move_pct"] = (df["close_line"] - df["start_line"]) / df["start_line"] * 100
-df["date"] = pd.to_datetime(df["time"]).dt.strftime("%Y-%m-%d")
+df["date"] = pd.to_datetime(df["time"], format="ISO8601").dt.strftime("%Y-%m-%d")
 
 # --- interactive HTML ---
 fig = px.scatter(

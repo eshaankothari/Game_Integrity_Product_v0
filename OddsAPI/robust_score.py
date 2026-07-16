@@ -79,7 +79,7 @@ df.round(4).to_csv(OUT, index=False)
 print(f"wrote {OUT.name} ({len(df)} rows), ranked by suspicious_score (percentile composite)\n")
 show = df[["player", "group", "time", "line_move_pct", "ou_ratio",
            "p_line", "p_price", "p_ratio", "suspicious_score", "suspicious_mz"]].copy()
-show["time"] = pd.to_datetime(show["time"]).dt.strftime("%Y-%m-%d")
+show["time"] = pd.to_datetime(show["time"], format="ISO8601").dt.strftime("%Y-%m-%d")
 print(show.round(3).to_string(index=False))
 print("\nmean suspicious_score (percentile) by group:")
 print(df.groupby("group")["suspicious_score"].mean().round(3).to_string())

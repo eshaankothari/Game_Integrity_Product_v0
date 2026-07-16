@@ -6,14 +6,17 @@ highest average first. A high average = the Under was priced as a longshot
 
     python rank_unders.py
 """
+import sys
 from pathlib import Path
 import pandas as pd
 
 _HERE = Path(__file__).parent
-CSV = next((p for p in [_HERE / "Key Figures" / "closing_under_prices.csv",
-                        _HERE / "closing_under_prices.csv"] if p.exists()), None)
-if CSV is None:
-    raise SystemExit("closing_under_prices.csv not found in Key Figures/ or project root")
+_root = _HERE
+while not (_root / "datapaths.py").exists() and _root.parent != _root:
+    _root = _root.parent
+sys.path.insert(0, str(_root))
+from datapaths import find_data           # noqa: E402  (repo-root helper)
+CSV = find_data("closing_under_prices.csv")
 
 df = pd.read_csv(CSV)
 df["closing_price"] = pd.to_numeric(df["closing_price"], errors="coerce")
