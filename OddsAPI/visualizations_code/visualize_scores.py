@@ -16,14 +16,15 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 HERE = Path(__file__).parent
-CSV = HERE / "Key Figures" / "test_dataset_jan_mar_scored.csv"
+KF = HERE.parent / "Key Figures"          # OddsAPI/Key Figures (up from visualizations_code/)
+CSV = KF / "test_dataset_jan_mar_scored.csv"
 
 df = pd.read_csv(CSV).sort_values("suspicious_score", ascending=False).reset_index(drop=True)
-df["date"] = pd.to_datetime(df["time"]).dt.strftime("%b %d")
+df["date"] = pd.to_datetime(df["time"], format="mixed").dt.strftime("%b %d")
 df["label"] = df["player"] + " — " + df["date"] + " (" + df["group"] + ")"
 
-COLS = ["z1", "z2", "z3", "suspicious_score"]
-COL_LABELS = ["z1<br>line", "z2<br>price|pinned", "z3<br>ratio", "SUSPICIOUS<br>SCORE"]
+COLS = ["z1", "z2", "suspicious_score"]
+COL_LABELS = ["z1<br>line", "z2<br>price|pinned", "SUSPICIOUS<br>SCORE"]
 M = df[COLS].to_numpy(dtype=float)
 vmax = np.nanmax(np.abs(M))
 
@@ -47,7 +48,7 @@ fig = go.Figure(go.Heatmap(
 ))
 fig.update_layout(title="Suspicious-trading z-scores by player-game (Jan-Mar test set)",
                   yaxis=dict(autorange="reversed"), height=760, width=760)
-fig.write_html(HERE / "scores_heatmap.html")
+fig.write_html(KF / "scores_heatmap.html")
 
 # --- static PNG ---
 masked = np.ma.masked_invalid(M)
@@ -65,9 +66,9 @@ for i in range(len(df)):
         if not np.isnan(M[i, j]):
             ax.text(j, i, f"{M[i, j]:.2f}", ha="center", va="center", fontsize=7.5,
                     color="black" if abs(M[i, j]) < vmax * 0.6 else "white")
-ax.axvline(2.5, color="black", lw=1.5)   # separate components from final score
+ax.axvline(1.5, color="black", lw=1.5)   # separate components from final score
 ax.set_title("Suspicious-trading z-scores by player-game\n(red = suspicious; grey = z2 N/A)")
 fig2.colorbar(im, ax=ax, fraction=0.035, pad=0.03, label="z")
-fig2.savefig(HERE / "scores_heatmap.png", dpi=120, bbox_inches="tight")
+fig2.savefig(KF / "scores_heatmap.png", dpi=120, bbox_inches="tight")
 
 print("wrote scores_heatmap.html / .png")
