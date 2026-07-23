@@ -128,3 +128,7 @@ fig2.savefig(KF / "per36_heatmap.png", dpi=120, bbox_inches="tight")
 
 print(f"wrote per36_heatmap.html / .png and {OUTCSV.name} ({len(df)} games)")
 print("cols:", RAWCOLS)
+
+import slideshow           # noqa: E402  (repo root already on sys.path)
+slideshow.add(KF / "per36_heatmap.html", "10 · Per-36 normalized",
+              "Counting stats normalized by minutes; rate metrics shown alongside.")

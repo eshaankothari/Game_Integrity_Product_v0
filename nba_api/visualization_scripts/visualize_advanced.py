@@ -110,3 +110,7 @@ fig2.colorbar(im, ax=ax, fraction=0.03, pad=0.02, label="z within column")
 fig2.savefig(KF / "advanced_heatmap.png", dpi=120, bbox_inches="tight")
 
 print(f"wrote advanced_heatmap.html / .png ({len(df)} games, cols: {RAWCOLS})")
+
+import slideshow           # noqa: E402  (repo root already on sys.path)
+slideshow.add(KF / "advanced_heatmap.html", "9 · Advanced box-score metrics",
+              "netRating, TS%, usage%, PIE, pace — residual + minutes for context.")

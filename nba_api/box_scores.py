@@ -15,11 +15,13 @@ connection. Caches survive so you only pay for games not yet fetched.
     python box_scores.py 5          # only the first 5 rows (smoke test)
 """
 import sys
+import time
 import json
 import unicodedata
 from pathlib import Path
 
 import pandas as pd
+import requests
 from nba_api.stats.static import teams as static_teams
 from nba_api.stats.endpoints import scoreboardv2, boxscoretraditionalv3
 
@@ -73,15 +75,27 @@ def resolve_game_id(date, away_id, home_id):
     return str(hit.iloc[0]["GAME_ID"]).zfill(10) if not hit.empty else None
 
 
+RETRIES = 4          # stats.nba.com stalls intermittently; retry with backoff
+
+
 def box_players(game_id):
-    """Cached BoxScoreTraditionalV3 player_stats for a game."""
+    """Cached BoxScoreTraditionalV3 player_stats for a game (retries on timeout)."""
     cache = CACHE / f"box_{game_id}.csv"
     if cache.exists():
         return pd.read_csv(cache)
-    b = boxscoretraditionalv3.BoxScoreTraditionalV3(game_id=game_id, timeout=TIMEOUT)
-    df = b.player_stats.get_data_frame()
-    df.to_csv(cache, index=False)
-    return df
+    last = None
+    for attempt in range(1, RETRIES + 1):
+        try:
+            b = boxscoretraditionalv3.BoxScoreTraditionalV3(game_id=game_id, timeout=TIMEOUT)
+            df = b.player_stats.get_data_frame()
+            df.to_csv(cache, index=False)
+            return df
+        except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+            last = e
+            wait = 5 * attempt
+            print(f"   timeout on {game_id} (attempt {attempt}/{RETRIES}); waiting {wait}s")
+            time.sleep(wait)
+    raise last
 
 
 def player_row(game_id, player):

@@ -111,3 +111,7 @@ print("\ncorr(z_margin, z_lowmin):", round(df["z_margin"].corr(df["z_lowmin"]), 
 print("\ntop 6:")
 print(df.head(6)[["player", "group", "d", "points", "close_line", "minutes",
                   "z_margin", "z_lowmin", "outcome_score"]].to_string(index=False))
+
+import slideshow           # noqa: E402  (repo root already on sys.path)
+slideshow.add(KF / "outcome_score_heatmap.html", "8 · Outcome suspicion (margin + low minutes)",
+              "Big under AND few minutes → Porter's games rise to the top.")

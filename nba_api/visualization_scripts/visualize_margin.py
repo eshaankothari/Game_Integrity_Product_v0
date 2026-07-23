@@ -110,3 +110,7 @@ print("\nmean margin by group (higher = more under):")
 print(df.groupby("group")["margin_vs_line"].mean().round(2).to_string())
 print("\nunder rate by group:")
 print(df.assign(under=df["result"].eq("UNDER")).groupby("group")["under"].mean().round(3).to_string())
+
+import slideshow           # noqa: E402  (repo root already on sys.path)
+slideshow.add(KF / "margin_heatmap.html", "7 · Outcome: points vs line + minutes",
+              "Did the player actually go under? Margin (line − points) with minutes played.")
