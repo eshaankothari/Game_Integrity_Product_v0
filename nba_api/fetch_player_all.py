@@ -18,6 +18,7 @@ Every box score caches, so reruns resume where a stall left off.
 import sys
 import time
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 
 import pandas as pd
 import requests
@@ -30,6 +31,7 @@ from beasley_hustle import hustle_players
 from player_track import track_players
 
 RETRIES = 4
+WORKERS = 6          # games fetched concurrently (lower to ~3 if nba.com starts timing out)
 BOX = {"minutes": "minutes", "points": "points", "rebounds": "reboundsTotal",
        "assists": "assists", "plusMinus": "plusMinusPoints", "fga": "fieldGoalsAttempted"}
 ADV = {"turnoverRatio": "turnoverRatio", "usagePercentage": "usagePercentage"}
@@ -80,6 +82,36 @@ def all_games(player_id):
     raise last
 
 
+def _process_game(g, player):
+    """Fetch one game's box+advanced+hustle+track for `player`; row dict or None."""
+    gid = g["game_id"]
+
+    def _try(fn):                           # each endpoint independent; box is essential
+        try:
+            return _match(fn(gid), player)
+        except Exception as e:
+            print(f"   {g['date']} {gid}: {fn.__name__} failed ({e})")
+            return None
+
+    b = _try(box_players)
+    if b is None:
+        print(f"!! {g['date']} game {gid}: {player} not in box / box failed (DNP?)")
+        return None
+    a, h, t = _try(adv_players), _try(hustle_players), _try(track_players)
+    rec = {"player": player, "season": g["season"], "date": g["date"],
+           "matchup": g["MATCHUP"], "game_id": gid, "minutes": _min_to_float(b.get("minutes"))}
+    for name, col in list(BOX.items())[1:]:
+        rec[name] = pd.to_numeric(b.get(col), errors="coerce")
+    for name, col in ADV.items():
+        rec[name] = pd.to_numeric(a.get(col), errors="coerce") if a is not None else None
+    for name, col in HUS.items():
+        rec[name] = pd.to_numeric(h.get(col), errors="coerce") if h is not None else None
+    for name, col in TRK.items():
+        rec[name] = pd.to_numeric(t.get(col), errors="coerce") if t is not None else None
+    print(f"ok {g['season']} {g['date']}  {g['MATCHUP']:16s} pts={rec['points']} min={rec['minutes']}")
+    return rec
+
+
 def main(player, season=None, limit=None):
     pid = players.find_players_by_full_name(player)[0]["id"]
     games = all_games(pid)
@@ -92,34 +124,11 @@ def main(player, season=None, limit=None):
     out_path = Path(__file__).parent / f"{slug}_all_games.csv"
     print(f"{player} (id {pid}): {len(games)} career games\n")
 
-    rows = []
-    for _, g in games.iterrows():
-        gid = g["game_id"]
-        rec = {"player": player, "season": g["season"], "date": g["date"],
-               "matchup": g["MATCHUP"], "game_id": gid}
-        def _try(fn):                       # fetch each endpoint independently
-            try:
-                return _match(fn(gid), player)
-            except Exception as e:
-                print(f"   {g['date']} {gid}: {fn.__name__} failed ({e})")
-                return None
-        b = _try(box_players)               # box is essential; a/h/t are optional
-        if b is None:
-            print(f"!! {g['date']} game {gid}: {player} not in box / box failed (DNP?)"); continue
-        a, h, t = _try(adv_players), _try(hustle_players), _try(track_players)
-        rec["minutes"] = _min_to_float(b.get("minutes"))
-        for name, col in list(BOX.items())[1:]:
-            rec[name] = pd.to_numeric(b.get(col), errors="coerce")
-        for name, col in ADV.items():
-            rec[name] = pd.to_numeric(a.get(col), errors="coerce") if a is not None else None
-        for name, col in HUS.items():
-            rec[name] = pd.to_numeric(h.get(col), errors="coerce") if h is not None else None
-        for name, col in TRK.items():
-            rec[name] = pd.to_numeric(t.get(col), errors="coerce") if t is not None else None
-        rows.append(rec)
-        print(f"ok {g['season']} {g['date']}  {g['MATCHUP']:16s} pts={rec['points']} "
-              f"min={rec['minutes']} spd={rec.get('speed')} dist={rec.get('distance')} "
-              f"tch={rec.get('touches')}")
+    # fetch games concurrently (each game still does its 4 endpoints in order,
+    # so at most WORKERS connections are open at once)
+    with ThreadPoolExecutor(max_workers=WORKERS) as ex:
+        results = list(ex.map(lambda gr: _process_game(gr[1], player), games.iterrows()))
+    rows = [r for r in results if r is not None]
 
     df = pd.DataFrame(rows)
     df.to_csv(out_path, index=False)
